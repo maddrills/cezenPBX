@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  asterisk:
+    # this a custom image that has basic configs done in the extensions.conf and pjsip.conf
+    image: mathewfrancisv/cezen_asterisk:latest
+    container_name: mat_astersisk
+    # bring this up every time the host machine is brought up 
+    restart: always
+    # before creating the asterisk container make and bind the mysql container
+    depends_on:
+      - mysql
+    ports:
+      - "5060:5060/udp" # PJSIP
+      - "5060:5060/tcp" # PJSIP 
+
+    # ENV variables set in asterisk to bind it to mysql
+    environment:
+      - ASTERISK_DB_HOST=mysql
+      - ASTERISK_DB_USER=asterisk
+      - ASTERISK_DB_PASS=asterisk123
+      - ASTERISK_DB_NAME=asterisk
+    # volumes:
+    #   - ./asterisk/etc:/etc/asterisk   # Asterisk config files
+    #   - ./asterisk/var:/var/lib/asterisk  # Asterisk data storage
+    #   - ./asterisk/logs:/var/log/asterisk  # Logs
+    # network shared by both asterisk and mysql basically 
+    # they are under the same subnet and the network here 
+    # acts like a switch
+
+    command: ["asterisk", "-f"]
+
+    networks:
+      - asterisk_net
+
+  # MySQL
+  mysql:
+    image: mysql
+    container_name: mysql_astersik
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: asterisk
+      MYSQL_USER: asterisk
+      MYSQL_PASSWORD: asterisk123
+    ports:
+      - 3307:3306
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - asterisk_net
+
+
+networks:
+  asterisk_net:
+    driver: bridge
+
+volumes:
+  mysql_data:
