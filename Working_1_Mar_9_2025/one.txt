@@ -1,0 +1,8 @@
+This is the second file
+
+/home/mathew/Desktop/Dev/Asterisk/cezenPBX/asterisk-config/MySQL_conf_pbx/test1/conf
+
+
+module reload res_odbc.so
+odbc show
+

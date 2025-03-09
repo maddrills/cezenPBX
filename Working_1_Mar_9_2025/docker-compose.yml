@@ -1,0 +1,37 @@
+version: "3.8"
+services:
+  asterisk:
+    image: mathewfrancisv/odbc_mariadb
+    container_name: mat_asterisk
+    tty: true
+    depends_on: 
+      - mariadb
+    ports:
+      - "5060:5060/udp"       # SIP signaling
+      - "5060:5060/tcp"       # SIP signaling (TCP fallback)
+      - "10000-10050:10000-10050/udp"  # RTP ports
+    # volumes:
+    #   - ./asterisk_config:/etc/asterisk  # Custom config files
+    #command: sh -c "apk add unixodbc unixodbc-dev mariadb-connector-odbc"
+    networks:
+      - asterisk-net
+
+  mariadb:
+    image: mariadb
+    container_name: mat_mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: asterisk_db
+      MYSQL_USER: asterisk_user
+      MYSQL_PASSWORD: asterisk_pass
+    # volumes:
+    #   - ./mariadb_data:/var/lib/mysql      # Persistent data
+    #   - ./init.sql:/docker-entrypoint-initdb.d/init.sql  # SQL script for tables
+    ports:
+      - "3307:3306"
+    networks:
+      - asterisk-net
+
+networks:
+  asterisk-net:
+    driver: bridge
