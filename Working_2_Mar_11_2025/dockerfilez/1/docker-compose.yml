@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  asterisk:
+    # mysql -h mariadb -u asterisk -p to test connection
+    # this a custom image that has basic configs done in the extensions.conf and pjsip.conf
+    # image: mathewfrancisv/asterisk_mariadb
+    image: mathewfrancisv/odbc_mariadb
+    #image: mathewfrancisv/cezen_asterisk
+    container_name: mat_asterisk
+    # bring this up every time the host machine is brought up 
+    restart: always
+
+    # before creating the asterisk container make and bind the mysql container
+    depends_on:
+      - mariadb
+    ports:
+      - "5060:5060/udp" # PJSIP
+      - "5060:5060/tcp" # PJSIP 
+
+    # ENV variables set in asterisk to bind it to postgres
+    environment:
+      - ASTERISK_DB_HOST=mariadb
+      - ASTERISK_DB_USER=asterisk
+      - ASTERISK_DB_PASS=asterisk123
+      - ASTERISK_DB_NAME=asterisk
+    volumes:
+      - ./conf/res_odbc.conf:/etc/asterisk/res_odbc.conf
+      - ./conf/res_config_mysql.conf:/etc/asterisk/res_config_mysql.conf 
+      - ./conf/odbc.ini:/etc/odbc.ini
+      - ./conf/odbcinst.ini:/etc/odbcinst.ini
+
+    # network shared by both asterisk and mysql basically 
+    # they are under the same subnet and the network here 
+    # acts like a switch
+
+    command: ["asterisk", "-f"]
+
+    networks:
+      - asterisk_net
+
+  mariadb:
+    image: mariadb
+    container_name: mariadb_asterisk
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: asterisk
+      MYSQL_USER: asterisk
+      MYSQL_PASSWORD: asterisk123
+    ports:
+      - "3307:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - asterisk_net
+
+networks:
+  asterisk_net:
+    driver: bridge
+
+volumes:
+  mariadb_data:
