@@ -1,0 +1,52 @@
+version: "3.8"
+services:
+  asterisk:
+    image: mathewfrancisv/odbc_mariadb:v2.0.0
+    container_name: mat_asterisk
+    restart: always
+    tty: true
+    depends_on: 
+      - mariadb
+    ports:
+      - "5060:5060/udp"       # SIP signaling
+      - "5060:5060/tcp"       # SIP signaling (TCP fallback)
+      - "10000-10050:10000-10050/udp"  # RTP ports
+    volumes:
+      - ./conf/odbc.ini:/etc/odbc.ini
+      - ./conf/odbcinst.ini:/etc/odbcinst.ini
+      - ./conf/asterisk/:/etc/asterisk/
+    networks:
+      - asterisk-net
+
+  mariadb:
+    image: mariadb
+    container_name: mat_mariadb
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: asterisk_db
+      MYSQL_USER: asterisk_user
+      MYSQL_PASSWORD: asterisk_pass
+    volumes:
+      - ./mariadb_data:/var/lib/mysql      # Persistent data
+    ports:
+      - "3307:3306"
+    networks:
+      - asterisk-net
+
+    # *** only needed if your not running docker as a sudo user necessary for mariadb container db access
+    user: "999:999"  # Ensures the container runs as the mysql user, matching volume ownership
+    command: "--innodb-buffer-pool-size=256M"
+    healthcheck:  # Optional: Ensure MariaDB is healthy before Asterisk connects
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # ***
+
+networks:
+  asterisk-net:
+    driver: bridge
+
+
+    #
